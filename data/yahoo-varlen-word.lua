@@ -1,0 +1,51 @@
+if not LoaderTCVarLenWord then
+    require'LoaderTCVarLenWord'
+end
+
+-- config
+local dataPath = "data-raw/yahoo-answers/word-t7"
+
+local this = {}
+this.main = function (opt)
+    -- options
+    opt = opt or {}
+    opt.batSize = opt.batSize or error('no opt.batSize')
+    local dataMask = opt.dataMask or {tr=true,val=true,te=true}
+
+    -- vocab
+    local vocab = torch.load( path.join(dataPath, 'vocab.t7') )
+    local unk = 1 -- vocab index preserved for unknown word
+    assert(vocab['<unknown>']==unk)
+
+    -- tr, val, te data loader
+    local arg = {wordFill = unk}
+    local tr, val, te
+
+    if dataMask.tr == true then
+        local fntr = path.join(dataPath, 'tr.t7')
+        print('train data loader')
+        tr = LoaderTCVarLenWord(fntr, opt.batSize, arg)
+        tr:set_order_rand()
+        print(tr)
+    end
+
+    if dataMask.val == true then
+        local fnval = path.join(dataPath, 'te.t7')
+        print('val data loader')
+        val = LoaderTCVarLenWord(fnval, opt.batSize, arg)
+        val:set_order_natural()
+        print(val)
+    end
+
+    if dataMask.te == true then
+        local fnte = path.join(dataPath, 'te.t7')
+        print('test data loader')
+        te = LoaderTCVarLenWord(fnte, opt.batSize, arg)
+        te:set_order_natural()
+        print(te)
+    end
+
+    return {tr = tr, val = val, te = te, vocab = vocab}
+end
+return this
+
